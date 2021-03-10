@@ -1,10 +1,10 @@
 <template>
   <div>
     <p>Content Editable :</p>
-    <contenteditable tag="div" :contenteditable="isEditable" v-model="message" :noNL="noNL" :noHTML="noHTML" :isEditable="isEditable" @returned="enterPressed" @keyup="keyUp" @keypress="keyPress" />
+    <contenteditable tag="div" :contenteditable="isEditable" v-model="message" :interceptEnter="interceptEnter" :noHTML="noHTML" :isEditable="isEditable" @returned="enterPressed" @keyup="keyUp" @keypress="keyPress" />
     <form action="">
       <input type="checkbox" id="editable" v-model="isEditable"/><label for="editable">Editable ?</label><br/>
-      <input type="checkbox" id="nonl" v-model="noNL"/><label for="nonl">noNL ?</label><br/>
+      <input type="checkbox" id="interceptEnter" v-model="interceptEnter"/><label for="interceptEnter">interceptEnter ?</label><br/>
       <input type="checkbox" id="nohtml" v-model="noHTML"/><label for="nohtml">noHTML ?</label><br/>
       <label for="alt">Alternative input :</label>
       <input type="text" id="alt" v-model="message"/>
@@ -17,7 +17,7 @@
       <p>{{keyUpEv}}</p>
       <p>"keyPress" Event (caught and re-emitted) :</p>
       <p>{{keyPressEv}}</p>
-      
+
   </div>
 </template>
 
@@ -37,7 +37,7 @@ export default defineComponent({
   setup(props){
     const r: Obj = {
       isEditable : ref(true),
-      noNL : ref(false),
+      interceptEnter : ref(false),
       noHTML : ref(false),
       message : ref(),
       event : ref(''),
@@ -49,10 +49,10 @@ export default defineComponent({
       enterPressed(ev: any){
         const currentdate = new Date();
         r.event.value = "Return pressed on: " + currentdate.getDate() + "/"
-                + (currentdate.getMonth()+1)  + "/" 
-                + currentdate.getFullYear() + "  "  
-                + currentdate.getHours() + ":"  
-                + currentdate.getMinutes() + ":" 
+                + (currentdate.getMonth()+1)  + "/"
+                + currentdate.getFullYear() + "  "
+                + currentdate.getHours() + ":"
+                + currentdate.getMinutes() + ":"
                 + currentdate.getSeconds()
                 + " Content : " + ev
       },

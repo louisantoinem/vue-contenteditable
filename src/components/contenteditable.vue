@@ -19,7 +19,7 @@
 <script lang="ts">
 
 
-import { defineComponent, ref, computed, onMounted, watch } from 'vue';
+import { defineComponent, ref, onMounted, watch } from 'vue';
 
 function replaceAll(str: string, search: string, replacement: string) {
   return str.split(search).join(replacement);
@@ -38,7 +38,7 @@ export default defineComponent({
       type : Boolean,
       default : true,
     },
-    'noNL' : {
+    'interceptEnter' : {
       type : Boolean,
       default : false,
     },
@@ -64,21 +64,16 @@ export default defineComponent({
         element.value!.innerHTML = newcontent;
       }
     }
-    function update(event: any) {
+    function update() {
       emit('update:modelValue', currentContent());
     }
     function onPaste(event: any) {
       event.preventDefault();
-      let text = (event.originalEvent || event).clipboardData.getData('text/plain');
-      if(props.noNL) {
-        text = replaceAll(text, '\r\n', ' ');
-        text = replaceAll(text, '\n', ' ');
-        text = replaceAll(text, '\r', ' ');
-      }
+      const text = (event.originalEvent || event).clipboardData.getData('text/plain');
       window.document.execCommand('insertText', false, text);
     }
     function onKeypress(event: any) {
-      if(event.key == 'Enter' && !event.shiftKey && props.noNL) {
+      if(event.key == 'Enter' && !event.shiftKey && props.interceptEnter) {
         event.preventDefault();
         emit('returned', currentContent());
       }

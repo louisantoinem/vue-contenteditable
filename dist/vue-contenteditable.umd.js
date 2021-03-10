@@ -168,9 +168,11 @@ fixRegExpWellKnownSymbolLogic('split', 2, function (SPLIT, nativeSplit, maybeCal
   var internalSplit;
   if (
     'abbc'.split(/(b)*/)[1] == 'c' ||
+    // eslint-disable-next-line regexp/no-empty-group -- required for testing
     'test'.split(/(?:)/, -1).length != 4 ||
     'ab'.split(/(?:ab)*/).length != 2 ||
     '.'.split(/(.?)(.?)/).length != 4 ||
+    // eslint-disable-next-line regexp/no-assertion-capturing-group, regexp/no-empty-group -- required for testing
     '.'.split(/()()/).length > 1 ||
     ''.split(/.?/).length
   ) {
@@ -433,6 +435,43 @@ exports.f = Object.getOwnPropertyNames || function getOwnPropertyNames(O) {
 
 /***/ }),
 
+/***/ "2d00":
+/***/ (function(module, exports, __webpack_require__) {
+
+var global = __webpack_require__("da84");
+var userAgent = __webpack_require__("342f");
+
+var process = global.process;
+var versions = process && process.versions;
+var v8 = versions && versions.v8;
+var match, version;
+
+if (v8) {
+  match = v8.split('.');
+  version = match[0] + match[1];
+} else if (userAgent) {
+  match = userAgent.match(/Edge\/(\d+)/);
+  if (!match || match[1] >= 74) {
+    match = userAgent.match(/Chrome\/(\d+)/);
+    if (match) version = match[1];
+  }
+}
+
+module.exports = version && +version;
+
+
+/***/ }),
+
+/***/ "342f":
+/***/ (function(module, exports, __webpack_require__) {
+
+var getBuiltIn = __webpack_require__("d066");
+
+module.exports = getBuiltIn('navigator', 'userAgent') || '';
+
+
+/***/ }),
+
 /***/ "428f":
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -454,7 +493,7 @@ var split = ''.split;
 // fallback for non-array-like ES3 and non-enumerable old V8 strings
 module.exports = fails(function () {
   // throws an error in rhino, see https://github.com/mozilla/rhino/issues/346
-  // eslint-disable-next-line no-prototype-builtins
+  // eslint-disable-next-line no-prototype-builtins -- safe
   return !Object('z').propertyIsEnumerable(0);
 }) ? function (it) {
   return classof(it) == 'String' ? split.call(it, '') : Object(it);
@@ -505,12 +544,16 @@ module.exports = function (O, defaultConstructor) {
 /***/ "4930":
 /***/ (function(module, exports, __webpack_require__) {
 
+var IS_NODE = __webpack_require__("605d");
+var V8_VERSION = __webpack_require__("2d00");
 var fails = __webpack_require__("d039");
 
 module.exports = !!Object.getOwnPropertySymbols && !fails(function () {
-  // Chrome 38 Symbol has incorrect toString conversion
-  // eslint-disable-next-line no-undef
-  return !String(Symbol());
+  /* global Symbol -- required for testing */
+  return !Symbol.sham &&
+    // Chrome 38 Symbol has incorrect toString conversion
+    // Chrome 38-40 symbols are not inherited from DOM collections prototypes to instances
+    (IS_NODE ? V8_VERSION === 38 : V8_VERSION > 37 && V8_VERSION < 41);
 });
 
 
@@ -531,10 +574,10 @@ var createMethod = function (IS_INCLUDES) {
     var index = toAbsoluteIndex(fromIndex, length);
     var value;
     // Array#includes uses SameValueZero equality algorithm
-    // eslint-disable-next-line no-self-compare
+    // eslint-disable-next-line no-self-compare -- NaN check
     if (IS_INCLUDES && el != el) while (length > index) {
       value = O[index++];
-      // eslint-disable-next-line no-self-compare
+      // eslint-disable-next-line no-self-compare -- NaN check
       if (value != value) return true;
     // Array#indexOf ignores holes, Array#includes - not
     } else for (;length > index; index++) {
@@ -592,7 +635,7 @@ var store = __webpack_require__("c6cd");
 (module.exports = function (key, value) {
   return store[key] || (store[key] = value !== undefined ? value : {});
 })('versions', []).push({
-  version: '3.8.3',
+  version: '3.9.1',
   mode: IS_PURE ? 'pure' : 'global',
   copyright: '© 2021 Denis Pushkarev (zloirock.ru)'
 });
@@ -629,6 +672,17 @@ module.exports = function (bitmap, value) {
     value: value
   };
 };
+
+
+/***/ }),
+
+/***/ "605d":
+/***/ (function(module, exports, __webpack_require__) {
+
+var classof = __webpack_require__("c6b6");
+var global = __webpack_require__("da84");
+
+module.exports = classof(global.process) == 'process';
 
 
 /***/ }),
@@ -1044,6 +1098,7 @@ var UPDATES_LAST_INDEX_WRONG = (function () {
 var UNSUPPORTED_Y = stickyHelpers.UNSUPPORTED_Y || stickyHelpers.BROKEN_CARET;
 
 // nonparticipating capturing group, copied from es5-shim's String#split patch.
+// eslint-disable-next-line regexp/no-assertion-capturing-group, regexp/no-empty-group -- required for testing
 var NPCG_INCLUDED = /()??/.exec('')[1] !== undefined;
 
 var PATCH = UPDATES_LAST_INDEX_WRONG || NPCG_INCLUDED || UNSUPPORTED_Y;
@@ -1234,7 +1289,7 @@ var fails = __webpack_require__("d039");
 module.exports = function (METHOD_NAME, argument) {
   var method = [][METHOD_NAME];
   return !!method && fails(function () {
-    // eslint-disable-next-line no-useless-call,no-throw-literal
+    // eslint-disable-next-line no-useless-call,no-throw-literal -- required for testing
     method.call(null, argument || function () { throw 1; }, 1);
   });
 };
@@ -1313,9 +1368,12 @@ var Symbol = global.Symbol;
 var createWellKnownSymbol = USE_SYMBOL_AS_UID ? Symbol : Symbol && Symbol.withoutSetter || uid;
 
 module.exports = function (name) {
-  if (!has(WellKnownSymbolsStore, name)) {
-    if (NATIVE_SYMBOL && has(Symbol, name)) WellKnownSymbolsStore[name] = Symbol[name];
-    else WellKnownSymbolsStore[name] = createWellKnownSymbol('Symbol.' + name);
+  if (!has(WellKnownSymbolsStore, name) || !(NATIVE_SYMBOL || typeof WellKnownSymbolsStore[name] == 'string')) {
+    if (NATIVE_SYMBOL && has(Symbol, name)) {
+      WellKnownSymbolsStore[name] = Symbol[name];
+    } else {
+      WellKnownSymbolsStore[name] = createWellKnownSymbol('Symbol.' + name);
+    }
   } return WellKnownSymbolsStore[name];
 };
 
@@ -1569,6 +1627,7 @@ var REGEXP_REPLACE_SUBSTITUTES_UNDEFINED_CAPTURE = (function () {
 // Chrome 51 has a buggy "split" implementation when RegExp#exec !== nativeExec
 // Weex JS has frozen built-in prototypes, so use try / catch wrapper
 var SPLIT_WORKS_WITH_OVERWRITTEN_EXEC = !fails(function () {
+  // eslint-disable-next-line regexp/no-empty-group -- required for testing
   var re = /(?:)/;
   var originalExec = re.exec;
   re.exec = function () { return originalExec.apply(this, arguments); };
@@ -1665,12 +1724,12 @@ module.exports = function (KEY, length, exec, sham) {
 
 // https://github.com/zloirock/core-js/issues/86#issuecomment-115759028
 module.exports =
-  // eslint-disable-next-line no-undef
+  /* global globalThis -- safe */
   check(typeof globalThis == 'object' && globalThis) ||
   check(typeof window == 'object' && window) ||
   check(typeof self == 'object' && self) ||
   check(typeof global == 'object' && global) ||
-  // eslint-disable-next-line no-new-func
+  // eslint-disable-next-line no-new-func -- fallback
   (function () { return this; })() || Function('return this')();
 
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__("c8ba")))
@@ -1747,10 +1806,10 @@ if (typeof window !== 'undefined') {
 // EXTERNAL MODULE: external {"commonjs":"vue","commonjs2":"vue","root":"Vue"}
 var external_commonjs_vue_commonjs2_vue_root_Vue_ = __webpack_require__("8bbf");
 
-// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js??ref--12-0!./node_modules/thread-loader/dist/cjs.js!./node_modules/babel-loader/lib!./node_modules/vue-loader-v16/dist/templateLoader.js??ref--6!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader-v16/dist??ref--0-1!./src/components/contenteditable.vue?vue&type=template&id=7d4a7f28&scoped=true
+// CONCATENATED MODULE: ./node_modules/cache-loader/dist/cjs.js??ref--12-0!./node_modules/thread-loader/dist/cjs.js!./node_modules/babel-loader/lib!./node_modules/vue-loader-v16/dist/templateLoader.js??ref--6!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader-v16/dist??ref--0-1!./src/components/contenteditable.vue?vue&type=template&id=64529a6c&scoped=true
 
 
-var _withId = /*#__PURE__*/Object(external_commonjs_vue_commonjs2_vue_root_Vue_["withScopeId"])("data-v-7d4a7f28");
+var _withId = /*#__PURE__*/Object(external_commonjs_vue_commonjs2_vue_root_Vue_["withScopeId"])("data-v-64529a6c");
 
 var render = /*#__PURE__*/_withId(function (_ctx, _cache, $props, $setup, $data, $options) {
   return Object(external_commonjs_vue_commonjs2_vue_root_Vue_["openBlock"])(), Object(external_commonjs_vue_commonjs2_vue_root_Vue_["createBlock"])(Object(external_commonjs_vue_commonjs2_vue_root_Vue_["resolveDynamicComponent"])(_ctx.tag), {
@@ -1762,16 +1821,16 @@ var render = /*#__PURE__*/_withId(function (_ctx, _cache, $props, $setup, $data,
     ref: "element"
   }, null, 8, ["contenteditable", "onInput", "onBlur", "onPaste", "onKeypress"]);
 });
-// CONCATENATED MODULE: ./src/components/contenteditable.vue?vue&type=template&id=7d4a7f28&scoped=true
+// CONCATENATED MODULE: ./src/components/contenteditable.vue?vue&type=template&id=64529a6c&scoped=true
 
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.array.join.js
 var es_array_join = __webpack_require__("a15b");
 
-// EXTERNAL MODULE: ./node_modules/core-js/modules/es.regexp.exec.js
-var es_regexp_exec = __webpack_require__("ac1f");
-
 // EXTERNAL MODULE: ./node_modules/core-js/modules/es.string.split.js
 var es_string_split = __webpack_require__("1276");
+
+// EXTERNAL MODULE: ./node_modules/core-js/modules/es.regexp.exec.js
+var es_regexp_exec = __webpack_require__("ac1f");
 
 // CONCATENATED MODULE: ./node_modules/babel-loader/lib!./node_modules/ts-loader??ref--14-1!./node_modules/cache-loader/dist/cjs.js??ref--0-0!./node_modules/vue-loader-v16/dist??ref--0-1!./src/components/contenteditable.vue?vue&type=script&lang=ts
 
@@ -1789,16 +1848,16 @@ function replaceAll(str, search, replacement) {
     'tag': String,
     'contenteditable': {
       type: Boolean,
-      default: true
+      "default": true
     },
     'modelValue': String,
     'noHTML': {
       type: Boolean,
-      default: true
+      "default": true
     },
-    'noNL': {
+    'interceptEnter': {
       type: Boolean,
-      default: false
+      "default": false
     }
   },
   emits: {
@@ -1821,25 +1880,18 @@ function replaceAll(str, search, replacement) {
       }
     }
 
-    function update(event) {
+    function update() {
       emit('update:modelValue', currentContent());
     }
 
     function onPaste(event) {
       event.preventDefault();
       var text = (event.originalEvent || event).clipboardData.getData('text/plain');
-
-      if (props.noNL) {
-        text = replaceAll(text, '\r\n', ' ');
-        text = replaceAll(text, '\n', ' ');
-        text = replaceAll(text, '\r', ' ');
-      }
-
       window.document.execCommand('insertText', false, text);
     }
 
     function onKeypress(event) {
-      if (event.key == 'Enter' && props.noNL) {
+      if (event.key == 'Enter' && !event.shiftKey && props.interceptEnter) {
         event.preventDefault();
         emit('returned', currentContent());
       }
@@ -1872,7 +1924,7 @@ function replaceAll(str, search, replacement) {
 
 
 contenteditablevue_type_script_lang_ts.render = render
-contenteditablevue_type_script_lang_ts.__scopeId = "data-v-7d4a7f28"
+contenteditablevue_type_script_lang_ts.__scopeId = "data-v-64529a6c"
 
 /* harmony default export */ var contenteditable = (contenteditablevue_type_script_lang_ts);
 // CONCATENATED MODULE: ./src/main.ts
@@ -1907,9 +1959,8 @@ module.exports = function (it) {
 var NATIVE_SYMBOL = __webpack_require__("4930");
 
 module.exports = NATIVE_SYMBOL
-  // eslint-disable-next-line no-undef
+  /* global Symbol -- safe */
   && !Symbol.sham
-  // eslint-disable-next-line no-undef
   && typeof Symbol.iterator == 'symbol';
 
 

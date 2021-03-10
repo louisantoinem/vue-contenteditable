@@ -9,12 +9,12 @@ declare const _default: import("vue").DefineComponent<{
         type: BooleanConstructor;
         default: boolean;
     };
-    noNL: {
+    interceptEnter: {
         type: BooleanConstructor;
         default: boolean;
     };
 }, {
-    update: (event: any) => void;
+    update: () => void;
     onPaste: (event: any) => void;
     onKeypress: (event: any) => void;
     element: import("vue").Ref<HTMLElement | null>;
@@ -24,13 +24,13 @@ declare const _default: import("vue").DefineComponent<{
 }, string, import("vue").VNodeProps & import("vue").AllowedComponentProps & import("vue").ComponentCustomProps, Readonly<{
     contenteditable: boolean;
     noHTML: boolean;
-    noNL: boolean;
+    interceptEnter: boolean;
 } & {
     tag?: string | undefined;
     modelValue?: string | undefined;
 }>, {
     contenteditable: boolean;
     noHTML: boolean;
-    noNL: boolean;
+    interceptEnter: boolean;
 }>;
 export default _default;
