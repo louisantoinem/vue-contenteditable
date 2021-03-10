@@ -49,9 +49,9 @@ export default defineComponent({
   },
   setup(props, {emit} ){
     const element = ref<HTMLElement | null>(null)
-    
+
     function currentContent(){
-      return props.noHTML ? 
+      return props.noHTML ?
         element.value!.innerText
         :
         element.value!.innerHTML
@@ -78,7 +78,7 @@ export default defineComponent({
       window.document.execCommand('insertText', false, text);
     }
     function onKeypress(event: any) {
-      if(event.key == 'Enter' && props.noNL) {
+      if(event.key == 'Enter' && !event.shiftKey && props.noNL) {
         event.preventDefault();
         emit('returned', currentContent());
       }
@@ -100,4 +100,3 @@ export default defineComponent({
   },
 })
 </script>
-
